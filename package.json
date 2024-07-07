@@ -1,0 +1,58 @@
+{
+  "name": "HapiTS-PostgresStarter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "ts-node -r tsconfig-paths/register ./node_modules/.bin/tsc",
+    "dev": "nodemon",
+    "start": "npm run build && node -r tsconfig-paths/register dist/index.js",
+    "lint": "eslint 'src/**/*.{js,ts}'",
+    "format": "prettier --write 'src/**/*.{js,ts}'",
+    "mikro-orm": "ts-node -r tsconfig-paths/register ./node_modules/.bin/mikro-orm",
+    "migration:initial": "npm run mikro-orm migration:create -- --config=./mikro-orm.ts --initial",
+    "migration:create": "npm run mikro-orm migration:create -- --config=./mikro-orm.ts",
+    "migration:up": "npm run mikro-orm migration:up -- --config=./mikro-orm.ts",
+    "migration:down": "npm run mikro-orm migration:down -- --config=./mikro-orm.ts",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "Akhshy Ganesh",
+  "description": "",
+  "dependencies": {
+    "@hapi/hapi": "^21.3.10",
+    "@mikro-orm/core": "^6.2.9",
+    "@mikro-orm/migrations": "^6.2.9",
+    "@mikro-orm/postgresql": "^6.2.9",
+    "@mikro-orm/reflection": "^6.2.9",
+    "joi": "^17.13.3",
+    "pg": "^8.12.0",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@mikro-orm/cli": "^6.2.9",
+    "@types/hapi__hapi": "^21.0.0",
+    "@types/node": "^20.14.10",
+    "dotenv": "^16.4.5",
+    "eslint": "^9.6.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
+    "nodemon": "^3.1.4",
+    "prettier": "^3.3.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.5.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
