@@ -6,6 +6,11 @@ import config from '@/config';
 const server: Hapi.Server = Hapi.server({
   port: config.port,
   host: config.host,
+  routes: {
+    cors: {
+      origin: ['http://localhost:3000'], // Allows requests only from http://localhost:3000
+    },
+  },
 });
 
 const start = async () => {
