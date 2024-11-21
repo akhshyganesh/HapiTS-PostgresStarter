@@ -72,7 +72,7 @@ Follow these steps to get up and running with the HapiTS-PostgresMikro template.
 │   ├── server.ts
 │   └── ...
 ├── .env
-├── .eslintrc.js
+├── .eslint.config.js
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
@@ -94,5 +94,6 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 ```
-
-Feel free to adjust this content to better match your project's specifics.
+Feel free to modify this content to better suit your specific needs and project details.
+Please do not forget to include this project license
+```
