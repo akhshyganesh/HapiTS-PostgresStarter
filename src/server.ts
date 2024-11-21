@@ -8,7 +8,10 @@ const server: Hapi.Server = Hapi.server({
   host: config.host,
   routes: {
     cors: {
-      origin: ['http://localhost:3000'], // Allows requests only from http://localhost:3000
+      origin: ['*'], // add your frontend url
+      headers: ['Authorization', 'Accept', 'Content-Type'],
+      exposedHeaders: ['Authorization', 'Accept', 'Content-Type'],
+      credentials: true,
     },
   },
 });
