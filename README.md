@@ -1,14 +1,14 @@
-> **Note:** If you're looking for legacy v1.0.0 version of this project, please check [here](https://github.com/akhshyganesh/HapiTS-MongoStarter/tree/legacy/v1.0.0) or visit https://github.com/akhshyganesh/HapiTS-MongoStarter/tree/legacy/v1.0.0.
+> **Note:** If you're looking for legacy v1.0.0 version of this project, please check [here](https://github.com/akhshyganesh/HapiTS-PostgresStarter/tree/legacy/v1.0.0) or visit https://github.com/akhshyganesh/HapiTS-PostgresStarter/tree/legacy/v1.0.0.
 
-# Hapi MongoDB TypeScript Starter Kit
+# Hapi PostgreSQL TypeScript Starter Kit
 
-A production-ready starter kit for building RESTful APIs with Hapi.js, MongoDB, and TypeScript. Includes a React client application for testing and interacting with the API.
+A production-ready starter kit for building RESTful APIs with Hapi.js, PostgreSQL, and TypeScript. Includes a React client application for testing and interacting with the API.
 
 ## Features
 
 ### Server
 - **Framework**: Hapi.js
-- **Database**: MongoDB with Mongoose
+- **Database**: PostgreSQL with MikroORM
 - **Language**: TypeScript
 - **Authentication**: JWT
 - **Authorization**: Role-based access control
@@ -32,13 +32,16 @@ A production-ready starter kit for building RESTful APIs with Hapi.js, MongoDB, 
 ├── src/                  # Server-side code
 │   ├── config/           # Configuration files
 │   ├── controllers/      # Route controllers
+│   ├── entities/         # Database entity models
 │   ├── middleware/       # Custom middleware
 │   │   ├── auth/         # Authentication middleware
 │   │   └── logging/      # Logging middleware
-│   ├── models/           # MongoDB models
+│   ├── migrations/       # Database migrations
 │   ├── routes/           # API routes
 │   ├── schemas/          # Validation schemas
+│   ├── seeders/          # Database seeders
 │   ├── services/         # Business logic
+│   ├── types/            # TypeScript type definitions
 │   └── utils/            # Utility functions
 │       └── response/     # Response formatters
 │
@@ -62,14 +65,14 @@ A production-ready starter kit for building RESTful APIs with Hapi.js, MongoDB, 
 ### Prerequisites
 
 - Node.js (v20 or higher)
-- MongoDB
+- PostgreSQL (v14 or higher)
 
 ### Server Installation
 
 1. Clone the repository
 ```bash
-git clone https://github.com/akhshyganesh/HapiTS-MongoStarter.git
-cd HapiTS-MongoStarter
+git clone https://github.com/akhshyganesh/HapiTS-PostgresStarter.git
+cd HapiTS-PostgresStarter
 ```
 
 2. Install dependencies
@@ -119,6 +122,10 @@ The client will run on http://localhost:3001 by default, while the API server ru
 - `npm run test` - Run tests
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Run tests with coverage
+- `npm run mikro:create-migration` - Create a new database migration
+- `npm run mikro:migrate` - Run database migrations
+- `npm run mikro:revert` - Revert the last migration
+- `npm run mikro:pending` - Show pending migrations
 
 #### Client
 - `npm start` - Start the development server
@@ -206,7 +213,7 @@ The included React client application provides a user interface for interacting 
 - ESLint and Prettier for code quality
 - Jest for testing
 - Winston for logging
-- Mongoose for database operations
+- MikroORM for database operations with PostgreSQL
 - Path aliases for cleaner imports (e.g., `@/controllers` instead of `../../../controllers`)
 
 #### Path Aliases
@@ -214,12 +221,19 @@ The project uses TypeScript path aliases for cleaner imports:
 - Configure in `tsconfig.json` with the `paths` option
 - For Jest tests, these aliases are mapped in `jest.config.js` using `moduleNameMapper`
 
+#### Database Configuration
+The project uses MikroORM with PostgreSQL:
+- Entity definitions in `src/entities/`
+- Database configuration in `src/config/mikro-orm.config.ts`
+- Migration files in `src/migrations/`
+- Seeders for initial data in `src/seeders/`
+
 #### Testing Configuration
 For proper test configuration:
 - Tests are organized in `tests/` directory
 - Integration tests use a test database specified in the `.env.test` file
 - `tests/setup.ts` configures the test environment
-- Mock modules are stored in `tests/mocks/`
+- The test environment uses a separate database to avoid conflicts with development
 
 Example Jest configuration:
 ```js
@@ -228,11 +242,16 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '@/(.*)': '<rootDir>/src/$1'
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  testTimeout: 30000,
+  collectCoverageFrom: [
+    'src/**/*.{js,ts}',
+    '!src/**/*.d.ts'
+  ],
+  coverageReporters: ['text', 'lcov'],
   testMatch: ['**/*.test.ts'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/types/**/*.ts']
+  setupFilesAfterEnv: ['./tests/setup.ts']
 };
 ```
 
