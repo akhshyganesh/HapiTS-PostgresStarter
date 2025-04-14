@@ -18,7 +18,8 @@
     "mikro:create-migration": "mikro-orm migration:create",
     "mikro:migrate": "mikro-orm migration:up",
     "mikro:revert": "mikro-orm migration:down",
-    "mikro:pending": "mikro-orm migration:pending"
+    "mikro:pending": "mikro-orm migration:pending",
+    "lint-staged": "lint-staged"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
@@ -64,7 +65,7 @@
     "typescript": "^5.2.2"
   },
   "lint-staged": {
-    "*.ts": [
+    "*.{ts,js}": [
       "eslint --fix",
       "prettier --write"
     ]
