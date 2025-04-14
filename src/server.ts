@@ -1,39 +1,87 @@
 import * as Hapi from '@hapi/hapi';
-import { getEntityManager, initORM } from '@/utils/db';
-import routes from '@/routes';
-import config from '@/config';
+import Boom from '@hapi/boom';
+import { registerPlugins } from '@/plugins';
+import { registerRoutes } from '@/routes';
 
-const server: Hapi.Server = Hapi.server({
-  port: config.port,
-  host: config.host,
-  routes: {
-    cors: {
-      origin: ['*'], // add your frontend url
-      headers: ['Authorization', 'Accept', 'Content-Type'],
-      exposedHeaders: ['Authorization', 'Accept', 'Content-Type'],
-      credentials: true,
-    },
-  },
-});
-
-const start = async () => {
-  await initORM();
-  const em = getEntityManager();
-
-  server.ext('onRequest', (request: Hapi.Request, h: Hapi.ResponseToolkit) => {
-    (request as any).em = em; // Attach em to the request object
-    return h.continue;
-  });
-
-  server.route(routes);
-
-  await server.start();
-  console.log('Server running on %s', server.info.uri);
+const validationErrorHandler = (
+  request: Hapi.Request,
+  h: Hapi.ResponseToolkit,
+  err?: Error,
+): Hapi.Lifecycle.ReturnValue => {
+  if (err) {
+    throw Boom.badRequest(err.message);
+  }
+  return h.continue;
 };
 
-process.on('unhandledRejection', (err) => {
-  console.log(err);
-  process.exit(1);
-});
+export const startServer = async (): Promise<Hapi.Server> => {
+  const server = new Hapi.Server({
+    port: process.env.PORT || 3000,
+    host: process.env.HOST || 'localhost',
+    routes: {
+      cors: {
+        // origin: ['*'],
+        origin: ['localhost:3001', 'http://localhost:3001'],
+        credentials: true,
+        headers: ['Accept', 'Authorization', 'Content-Type', 'If-None-Match'],
+        exposedHeaders: ['WWW-Authenticate', 'Server-Authorization'],
+        maxAge: 86400,
+      },
+      validate: {
+        failAction: validationErrorHandler,
+      },
+    },
+  });
 
-start();
+  // Register plugins
+  await registerPlugins(server);
+
+  // Register routes
+  registerRoutes(server);
+
+  await server.start();
+  return server;
+};
+
+export const init = async (): Promise<Hapi.Server> => {
+  const server = new Hapi.Server({
+    port: process.env.PORT || 3000,
+    host: process.env.HOST || '0.0.0.0',
+    routes: {
+      validate: {
+        failAction: async (
+          request: Hapi.Request,
+          h: Hapi.ResponseToolkit,
+          err: Error | undefined,
+        ): Promise<never | Hapi.Lifecycle.ReturnValue> => {
+          if (process.env.NODE_ENV === 'production') {
+            throw Boom.badRequest('Invalid request payload');
+          } else {
+            if (err) throw err;
+            return h.continue;
+          }
+        },
+      },
+    },
+  });
+
+  await registerPlugins(server);
+  registerRoutes(server);
+
+  return server;
+};
+
+if (!module.parent) {
+  // Only start the server if this file is run directly
+  const start = async () => {
+    try {
+      const server = await init();
+      await server.start();
+      console.log(`Server running at: ${server.info.uri}`);
+    } catch (err) {
+      console.error(err);
+      process.exit(1);
+    }
+  };
+  start();
+}

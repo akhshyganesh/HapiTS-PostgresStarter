@@ -1,113 +1,97 @@
-import { Request, ResponseToolkit } from '@hapi/hapi';
+import { Request, ResponseObject, ResponseToolkit } from '@hapi/hapi';
+import Boom from '@hapi/boom';
 import { UserService } from '@/services/user.service';
+import ResponseFormatter from '@/utils/response/formatter';
+import { createUserSchema, updateUserSchema } from '@/schemas/user.schema';
+import { UniqueConstraintViolationException } from '@mikro-orm/core';
+import { IAny } from '@/types';
 
-export const UserController = {
-  async getAllUsers(request: Request, h: ResponseToolkit) {
+export class UserController {
+  private readonly userService: UserService;
+
+  constructor() {
+    this.userService = new UserService();
+  }
+
+  public createUser = async (request: Request, h: ResponseToolkit): Promise<ResponseObject> => {
     try {
-      const users = await UserService.getAllUsers();
-      return h.response({ success: true, data: users });
-    } catch (error) {
-      return h
-        .response({ success: false, error: 'Unable to fetch users' })
-        .code(500);
+      const userData = await createUserSchema.validateAsync(request.payload);
+      const user = await this.userService.createUser(userData);
+
+      return h.response(ResponseFormatter.success(user)).code(201);
+    } catch (error: IAny) {
+      if (error instanceof UniqueConstraintViolationException) {
+        throw Boom.conflict('Email already in use');
+      }
+      if (error.isJoi) {
+        throw Boom.badRequest(error.message);
+      }
+      throw Boom.badImplementation('Failed to create user');
     }
-  },
+  };
 
-  async getUserById(request: Request, h: ResponseToolkit) {
-    if (!request.params.id)
-      return h.response({ success: false, error: 'Id not provided' }).code(400);
+  public getUsers = async (request: Request, h: ResponseToolkit): Promise<ResponseObject> => {
     try {
-      const userId = parseInt(request.params.id);
-      if (isNaN(userId) || userId <= 0) {
-        return h
-          .response({ success: false, error: 'Invalid user ID' })
-          .code(400);
+      const users = await this.userService.getUsers();
+      return h.response(ResponseFormatter.success(users));
+    } catch (error: IAny) {
+      throw Boom.badImplementation('Failed to retrieve users');
+    }
+  };
+
+  public getUserById = async (request: Request, h: ResponseToolkit): Promise<ResponseObject> => {
+    try {
+      const { id } = request.params;
+      const user = await this.userService.getUserById(id);
+
+      if (!user) {
+        throw Boom.notFound('User not found');
       }
 
-      const user = await UserService.getUserById(userId);
-      return user
-        ? h.response({ success: true, data: user })
-        : h.response({ success: false, error: 'User not found' }).code(404);
-    } catch (error) {
-      return h
-        .response({ success: false, error: 'Unable to fetch user' })
-        .code(500);
+      return h.response(ResponseFormatter.success(user));
+    } catch (error: IAny) {
+      if (Boom.isBoom(error)) {
+        throw error;
+      }
+      throw Boom.badImplementation('Failed to retrieve user');
     }
-  },
+  };
 
-  async createUser(request: Request, h: ResponseToolkit) {
+  public updateUser = async (request: Request, h: ResponseToolkit): Promise<ResponseObject> => {
     try {
-      const { name, email } = request.payload as {
-        name: string;
-        email: string;
-      };
+      const { id } = request.params;
+      const updateData = await updateUserSchema.validateAsync(request.payload);
 
-      if (!name || !email) {
-        return h
-          .response({ success: false, error: 'Name and email are required' })
-          .code(400);
+      const updatedUser = await this.userService.updateUser(id, updateData);
+
+      if (!updatedUser) {
+        throw Boom.notFound('User not found');
       }
 
-      const newUser = await UserService.createUser(name, email);
-      return h.response({ success: true, data: newUser }).code(201);
-    } catch (error) {
-      return h
-        .response({ success: false, error: 'Unable to create user' })
-        .code(500);
+      return h.response(ResponseFormatter.success(updatedUser));
+    } catch (error: IAny) {
+      if (Boom.isBoom(error)) {
+        throw error;
+      }
+      throw Boom.badImplementation('Failed to update user');
     }
-  },
+  };
 
-  async updateUser(request: Request, h: ResponseToolkit) {
-    if (!request.params.id)
-      return h.response({ success: false, error: 'Id not provided' }).code(400);
+  public deleteUser = async (request: Request, h: ResponseToolkit): Promise<ResponseObject> => {
     try {
-      const userId = parseInt(request.params.id);
-      const { name, email } = request.payload as {
-        name: string;
-        email: string;
-      };
+      const { id } = request.params;
+      const result = await this.userService.deleteUser(id);
 
-      if (isNaN(userId) || userId <= 0) {
-        return h
-          .response({ success: false, error: 'Invalid user ID' })
-          .code(400);
+      if (!result) {
+        throw Boom.notFound('User not found');
       }
 
-      if (!name || !email) {
-        return h
-          .response({ success: false, error: 'Name and email are required' })
-          .code(400);
+      return h.response(ResponseFormatter.success({ message: 'User deleted successfully' }));
+    } catch (error: IAny) {
+      if (Boom.isBoom(error)) {
+        throw error;
       }
-
-      const updatedUser = await UserService.updateUser(userId, name, email);
-      return updatedUser
-        ? h.response({ success: true, data: updatedUser })
-        : h.response({ success: false, error: 'User not found' }).code(404);
-    } catch (error) {
-      return h
-        .response({ success: false, error: 'Unable to update user' })
-        .code(500);
+      throw Boom.badImplementation('Failed to delete user');
     }
-  },
-
-  async deleteUser(request: Request, h: ResponseToolkit) {
-    if (!request.params.id)
-      return h.response({ success: false, error: 'Id not provided' }).code(400);
-    try {
-      const userId = parseInt(request.params.id);
-
-      if (isNaN(userId) || userId <= 0) {
-        return h
-          .response({ success: false, error: 'Invalid user ID' })
-          .code(400);
-      }
-
-      await UserService.deleteUser(userId);
-      return h.response({ success: true }).code(204);
-    } catch (error) {
-      return h
-        .response({ success: false, error: 'Unable to delete user' })
-        .code(500);
-    }
-  },
-};
+  };
+}
