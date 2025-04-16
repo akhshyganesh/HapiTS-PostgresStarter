@@ -1,16 +1,17 @@
 import 'dotenv/config';
-import { startServer } from './server';
+import { init } from './server';
 import { connectDatabase, closeDatabaseConnection } from './config/database';
 import logger from './utils/logger';
-import { IAny } from '@/types';
 
 const start = async (): Promise<void> => {
   try {
-    // Connect to PostgreSQL
+    // Connect to database first
     await connectDatabase();
 
-    // Start Hapi server
-    const server = await startServer();
+    // Then initialize and start the server
+    const server = await init();
+    await server.start();
+
     logger.info(`Server running at: ${server.info.uri}`);
 
     // Handle shutdown gracefully
@@ -20,15 +21,17 @@ const start = async (): Promise<void> => {
       await closeDatabaseConnection();
       process.exit(0);
     });
-  } catch (error: IAny) {
-    logger.error('Error starting server:', error);
+  } catch (err) {
+    logger.error('Error starting server:', err);
+    await closeDatabaseConnection();
     process.exit(1);
   }
 };
 
 start();
 
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', async (err) => {
   logger.error('Unhandled rejection:', err);
+  await closeDatabaseConnection();
   process.exit(1);
 });

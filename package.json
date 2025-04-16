@@ -19,6 +19,7 @@
     "mikro:migrate": "mikro-orm migration:up",
     "mikro:revert": "mikro-orm migration:down",
     "mikro:pending": "mikro-orm migration:pending",
+    "mikro:seed": "mikro-orm seeder:run",
     "lint-staged": "lint-staged"
   },
   "dependencies": {

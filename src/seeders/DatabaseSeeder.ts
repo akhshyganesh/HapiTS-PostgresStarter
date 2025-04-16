@@ -1,14 +1,13 @@
 import { EntityManager } from '@mikro-orm/core';
 import { Seeder } from '@mikro-orm/seeder';
 import { User, UserRole } from '@/entities/user.entity';
-import bcrypt from 'bcrypt';
 
 export class DatabaseSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
     const now = new Date();
 
     // Create admin user
-    const adminPassword = await bcrypt.hash('Admin123!', 10);
+    const adminPassword = 'Admin123!';
     const admin = em.create(User, {
       email: 'admin@example.com',
       password: adminPassword,
@@ -21,7 +20,7 @@ export class DatabaseSeeder extends Seeder {
     });
 
     // Create regular user
-    const userPassword = await bcrypt.hash('User123!', 10);
+    const userPassword = 'User123!';
     const user = em.create(User, {
       email: 'user@example.com',
       password: userPassword,
