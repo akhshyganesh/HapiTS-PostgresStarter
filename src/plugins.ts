@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Server } from '@hapi/hapi';
 import hapiAuthJwt2 from 'hapi-auth-jwt2';
 import { validateToken } from '@/middleware/auth/auth.middleware';

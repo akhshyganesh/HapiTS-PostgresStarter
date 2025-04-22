@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import * as Hapi from '@hapi/hapi';
 import Boom from '@hapi/boom';
 import { registerPlugins } from '@/plugins';
@@ -9,9 +10,10 @@ export const init = async (): Promise<Hapi.Server> => {
     host: process.env.HOST || '0.0.0.0',
     routes: {
       cors: {
-        // origin: ['*'],
-        origin: ['localhost:3001', 'http://localhost:3001'],
-        credentials: true,
+        // origin: ['*'], // NOTE: If you want to allow all origins, you can uncomment this line
+        // but be cautious about security implications.
+        origin: process.env.CORS_ORIGIN?.split(',').map((origin: string) => origin.trim()) || ['*'],
+        credentials: process.env.CORS_CREDENTIALS === 'true',
         headers: ['Accept', 'Authorization', 'Content-Type', 'If-None-Match'],
         exposedHeaders: ['WWW-Authenticate', 'Server-Authorization'],
         maxAge: 86400,

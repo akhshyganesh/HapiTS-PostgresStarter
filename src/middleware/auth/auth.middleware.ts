@@ -1,9 +1,9 @@
+import 'dotenv/config';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { Request, ResponseToolkit } from '@hapi/hapi';
 import Boom from '@hapi/boom';
 import { User } from '@/entities/user.entity';
 import { getORM } from '@/config/database';
-import { IAny } from '@/types';
 
 export interface JwtPayload {
   id: string;
@@ -34,7 +34,7 @@ export const validateToken = async (
     request.user = user;
 
     return { isValid: true };
-  } catch (error: IAny) {
+  } catch (error) {
     return { isValid: false };
   }
 };

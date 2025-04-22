@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { MikroORM } from '@mikro-orm/core';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import logger from '@/utils/logger';
