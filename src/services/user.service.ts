@@ -1,89 +1,103 @@
 import { EntityManager } from '@mikro-orm/core';
-import { User } from '@/entities/User';
-import { getEntityManager } from '@/utils/db';
+import { User, UserRole } from '@/entities/user.entity';
+import { getORM } from '@/config/database';
+import { UserResponse, CreateUserData, UpdateUserData } from '@/types/user.types';
 
-export const UserService = {
-  async getAllUsers() {
-    try {
-      const em: EntityManager = getEntityManager();
-      return await em.find(User, {});
-    } catch (error) {
-      console.error('Error getting all users', error);
-      throw new Error('Unable to fetch users');
+export class UserService {
+  private em: EntityManager;
+  private initialized = false;
+
+  constructor() {
+    // Lazy initialization - will be called when methods are executed
+    this.em = {} as EntityManager;
+  }
+
+  private getEntityManager(): EntityManager {
+    // Only get the EntityManager when needed
+    if (!this.initialized) {
+      this.em = getORM().em.fork();
+      this.initialized = true;
     }
-  },
+    return this.em;
+  }
 
-  async getUserById(userId: number) {
-    if (isNaN(userId) || userId <= 0) {
-      throw new Error('Invalid user ID');
-    }
+  private mapUserToResponse(user: User): UserResponse {
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
 
-    try {
-      const em: EntityManager = getEntityManager();
-      return (await em.findOne(User, { id: userId })) || null;
-    } catch (error) {
-      console.error(`Error getting user with id ${userId}`, error);
-      throw new Error('Unable to fetch user');
-    }
-  },
+  public async createUser(userData: CreateUserData): Promise<UserResponse> {
+    const em = this.getEntityManager();
+    // Create a new date for both timestamps
+    const now = new Date();
 
-  async createUser(name: string, email: string) {
-    if (!name || !email) {
-      throw new Error('Name and email are required');
-    }
+    // Create the user with timestamps and provide defaults for optional fields
+    const user = em.create(User, {
+      ...userData,
+      role: userData.role || UserRole.USER, // Default to 'user' role
+      isActive: userData.isActive !== undefined ? userData.isActive : true, // Default to active
+      createdAt: now,
+      updatedAt: now,
+    });
 
-    try {
-      const em: EntityManager = getEntityManager();
-      const user = new User();
-      user.name = name;
-      user.email = email;
-      await em.persistAndFlush(user);
-      return user;
-    } catch (error) {
-      console.error(
-        `Error creating user with name ${name} and email ${email}`,
-        error,
-      );
-      throw new Error('Unable to create user');
-    }
-  },
+    await em.persistAndFlush(user);
 
-  async updateUser(userId: number, name: string, email: string) {
-    if (isNaN(userId) || userId <= 0) {
-      throw new Error('Invalid user ID');
-    }
+    return this.mapUserToResponse(user);
+  }
 
-    if (!name || !email) {
-      throw new Error('Name and email are required');
-    }
+  public async getUsers(): Promise<UserResponse[]> {
+    const em = this.getEntityManager();
+    const users = await em.find(User, {});
 
-    try {
-      const em: EntityManager = getEntityManager();
-      const user = await em.findOne(User, { id: userId });
-      if (!user) return null;
-      user.name = name;
-      user.email = email;
-      await em.persistAndFlush(user);
-      return user;
-    } catch (error) {
-      console.error(`Error updating user with id ${userId}`, error);
-      throw new Error('Unable to update user');
-    }
-  },
+    return users.map((user) => this.mapUserToResponse(user));
+  }
 
-  async deleteUser(userId: number) {
-    if (isNaN(userId) || userId <= 0) {
-      throw new Error('Invalid user ID');
+  public async getUserById(userId: string): Promise<UserResponse | null> {
+    const em = this.getEntityManager();
+    const user = await em.findOne(User, { id: userId });
+
+    if (!user) {
+      return null;
     }
 
-    try {
-      const em: EntityManager = getEntityManager();
-      const user = await em.findOne(User, { id: userId });
-      if (!user) return;
-      await em.removeAndFlush(user);
-    } catch (error) {
-      console.error(`Error deleting user with id ${userId}`, error);
-      throw new Error('Unable to delete user');
+    return this.mapUserToResponse(user);
+  }
+
+  public async updateUser(
+    userId: string,
+    updateData: UpdateUserData,
+  ): Promise<UserResponse | null> {
+    const em = this.getEntityManager();
+    const user = await em.findOne(User, { id: userId });
+
+    if (!user) {
+      return null;
     }
-  },
-};
+
+    // Apply updates
+    em.assign(user, updateData);
+    await em.flush();
+
+    return this.mapUserToResponse(user);
+  }
+
+  public async deleteUser(userId: string): Promise<boolean> {
+    const em = this.getEntityManager();
+    const user = await em.findOne(User, { id: userId });
+
+    if (!user) {
+      return false;
+    }
+
+    await em.removeAndFlush(user);
+    return true;
+  }
+}
